@@ -1,4 +1,4 @@
-{{- if .Values.tgi.enabled }}
+{{- if .Values.vllm.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,21 +7,21 @@ metadata:
     app.kubernetes.io/component: text-generation-inference
     {{- include "text-generation-inference-benchmark.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.tgi.replicaCount }}
+  replicas: {{ .Values.vllm.replicaCount }}
   selector:
     matchLabels:
       app.kubernetes.io/component: text-generation-inference
       {{- include "text-generation-inference-benchmark.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.tgi.podAnnotations }}
+      {{- with .Values.vllm.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         app.kubernetes.io/component: text-generation-inference
         {{- include "text-generation-inference-benchmark.labels" . | nindent 8 }}
-        {{- with .Values.tgi.podLabels }}
+        {{- with .Values.vllm.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
@@ -30,25 +30,25 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        {{- toYaml .Values.tgi.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.vllm.podSecurityContext | nindent 8 }}
       containers:
-        - name: text-generation-inference
+        - name: vllm
           securityContext:
-            {{- toYaml .Values.tgi.securityContext | nindent 12 }}
-          image: "{{ .Values.tgi.image.repository }}:{{ .Values.tgi.image.tag | default "latest" }}"
-          imagePullPolicy: {{ .Values.tgi.image.pullPolicy }}
+            {{- toYaml .Values.vllm.securityContext | nindent 12 }}
+          image: "{{ .Values.vllm.image.repository }}:{{ .Values.vllm.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.vllm.image.pullPolicy }}
           env:
-            - name: HF_TOKEN
+            - name: HUGGING_FACE_HUB_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "text-generation-inference-benchmark.fullname" . }}-hf-token
                   key: HF_TOKEN
-            - name: PORT
-              value: "8080"
           args:
-            - "--model-id"
+            - "--model"
             - "{{ .Values.model_id }}"
-            {{- with .Values.tgi.extra_args }}
+            - "--port"
+            - "8080"
+            {{- with .Values.vllm.extra_args }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           ports:
@@ -62,7 +62,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 3
           resources:
-            {{- toYaml .Values.tgi.resources | nindent 12 }}
+            {{- toYaml .Values.vllm.resources | nindent 12 }}
           volumeMounts:
             - name: shm
               mountPath: /dev/shm
@@ -72,15 +72,15 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 1Gi
-      {{- with .Values.tgi.nodeSelector }}
+      {{- with .Values.vllm.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tgi.affinity }}
+      {{- with .Values.vllm.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tgi.tolerations }}
+      {{- with .Values.vllm.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
