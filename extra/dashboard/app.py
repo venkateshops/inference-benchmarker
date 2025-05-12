@@ -68,19 +68,49 @@ def run(from_results_dir, datasource, port):
 
     def summary_table() -> pd.DataFrame:
         data = df_bench.groupby(['model', 'run_id', 'rate']).agg(
-            {'inter_token_latency_ms_p90': 'mean', 'time_to_first_token_ms_p90': 'mean',
-             'e2e_latency_ms_p90': 'mean', 'token_throughput_secs': 'mean',
-             'successful_requests': 'mean', 'error_rate': 'mean'}).reset_index()
+            {
+                'inter_token_latency_ms_p90': 'mean',
+                'time_to_first_token_ms_p90': 'mean',
+                'e2e_latency_ms_p90': 'mean',
+                'token_throughput_secs': 'mean',
+                'successful_requests': 'mean',
+                'error_rate': 'mean',
+                'total_requests': 'mean',
+                'total_tokens': 'mean',
+                'total_tokens_sent': 'mean',
+                'duration_ms': 'mean'
+            }).reset_index()
+
         data = data[
-            ['run_id', 'model', 'rate', 'inter_token_latency_ms_p90', 'time_to_first_token_ms_p90',
-             'e2e_latency_ms_p90',
-             'token_throughput_secs']]
-        for metric in ['inter_token_latency_ms_p90', 'time_to_first_token_ms_p90', 'e2e_latency_ms_p90',
-                       'token_throughput_secs']:
+            ['run_id', 'model', 'rate',
+             'inter_token_latency_ms_p90', 'time_to_first_token_ms_p90', 'e2e_latency_ms_p90',
+             'token_throughput_secs', 'successful_requests', 'error_rate',
+             'total_requests', 'total_tokens', 'total_tokens_sent', 'duration_ms']]
+
+        for metric in ['inter_token_latency_ms_p90', 'time_to_first_token_ms_p90',
+                       'e2e_latency_ms_p90', 'token_throughput_secs', 'duration_ms']:
             data[metric] = data[metric].apply(lambda x: f"{x:.2f}")
-        data = data.rename(
-            columns=column_mappings)
+
+        for metric in ['total_requests', 'total_tokens', 'total_tokens_sent']:
+            data[metric] = data[metric].apply(lambda x: int(x))
+
+        data = data.rename(columns={
+            'inter_token_latency_ms_p90': 'ITL P90 (ms)',
+            'time_to_first_token_ms_p90': 'TTFT P90 (ms)',
+            'e2e_latency_ms_p90': 'E2E P90 (ms)',
+            'token_throughput_secs': 'Throughput (tokens/s)',
+            'successful_requests': 'Successful requests',
+            'error_rate': 'Error rate (%)',
+            'total_requests': 'Total Requests',
+            'total_tokens': 'Output Tokens',
+            'total_tokens_sent': 'Input Tokens',
+            'duration_ms': 'Duration (ms)',
+            'model': 'Model',
+            'rate': 'QPS',
+            'run_id': 'Run ID'
+        })
         return data
+
 
     def load_bench_results(source) -> pd.DataFrame:
         data = pd.read_parquet(source)
